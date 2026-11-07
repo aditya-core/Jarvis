@@ -1,0 +1,12 @@
+# Core dependencies (always needed)
+requests>=2.31
+rich>=13.7
+PyYAML>=6.0
+beautifulsoup4>=4.12
+mss>=9.0
+psutil>=5.9
+
+# Optional — voice features (install separately for full voice mode)
+# faster-whisper>=0.5
+# sounddevice>=0.4
+# pyttsx3>=0.3

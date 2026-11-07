@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Jarvis data (notes, reminders, memory, screenshots)
+data/
+
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db

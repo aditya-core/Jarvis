@@ -23,12 +23,14 @@ from ..core.parser import similar
 
 
 class VoiceEngine:
-    def __init__(self, cfg: dict, handle_command, name: str = "Jarvis"):
+    def __init__(self, cfg: dict, handle_command, name: str = "Jarvis",
+                 on_wake=None):
         vcfg = (cfg or {}).get("voice", {}) or {}
         self.cfg = vcfg
         self.wake_word = (cfg or {}).get("jarvis", {}).get("wake_word",
                                                            "Hey Jarvis")
         self.handle_command = handle_command
+        self.on_wake = on_wake
         self.name = name
         self.console = Console()
         self.sd = None
@@ -158,6 +160,11 @@ class VoiceEngine:
                 phrase = self._listen_for_wake()
                 if self._is_wake(phrase):
                     self.console.print("[green]✓ wake word heard[/]")
+                    if self.on_wake:
+                        try:
+                            self.on_wake()
+                        except Exception:
+                            pass
                     self.speak("Yes?")
                     text = self._listen_command()
                     if not text.strip():

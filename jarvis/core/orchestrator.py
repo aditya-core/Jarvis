@@ -2,12 +2,16 @@
 jarvis.core.orchestrator
 ========================
 The brain's dispatcher. Parses input (fuzzy first, local LLM as backup),
-routes to the right plugin, keeps memory, and handles fallbacks.
+routes to the right plugin, keeps memory, records activity + thinking
+trace, and handles fallbacks.
 """
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from . import parser as P
+from .activity import ActivityLog
 from .brain import Brain
 from .memory import Memory
 from .permissions import Permissions
@@ -31,9 +35,11 @@ class Orchestrator:
         self.data_dir = self.cfg.get("data_dir", "data")
         self.brain = Brain(self.cfg)
         self.memory = Memory(self.data_dir)
+        self.activity = ActivityLog(self.data_dir)
         self.permissions = Permissions(confirm_cb)
         self.notify_cb = notify_cb
         self.plugins = {}
+        self.last_thinking = {}
 
     def register(self, plugin) -> None:
         self.plugins[plugin.name] = plugin
@@ -44,12 +50,14 @@ class Orchestrator:
         if not text:
             return ""
 
+        llm_consulted = False
         cmd = P.parse(text)
 
         # Fuzzy parser unsure? Ask the local LLM to straighten it out.
         if cmd.confidence < 0.7 and self.brain.available():
             fixed = self.brain.classify(text)
             if fixed:
+                llm_consulted = True
                 cmd = P.parse(fixed.get("reply") or text)
                 if fixed.get("intent"):
                     cmd.intent_id = fixed["intent"]
@@ -75,13 +83,34 @@ class Orchestrator:
         else:
             reply = self._fallback(cmd)
 
+        if reply is None:
+            reply = self._fallback(cmd)
+
         self.memory.remember("user", text)
         self.memory.remember("jarvis", reply)
+
+        # "AI thinking" trace — what the web UI shows
+        self.last_thinking = {
+            "intent": cmd.intent_id,
+            "confidence": round(cmd.confidence, 2),
+            "matched": cmd.matched,
+            "entity": cmd.entity,
+            "plugin": plugin.name if plugin else None,
+            "llm_consulted": llm_consulted,
+        }
+
+        # Activity record — everything Jarvis does is logged
+        self.activity.append({
+            "user": text,
+            "reply": reply,
+            "intent": cmd.intent_id,
+            "plugin": plugin.name if plugin else None,
+            "confidence": round(cmd.confidence, 2),
+        })
         return reply
 
     # ------------------------------------------------------------------
     def _greet(self) -> str:
-        from datetime import datetime
         h = datetime.now().hour
         if h < 12:
             return "Good morning! ☀️ What can I do for you?"

@@ -27,9 +27,23 @@ offline for core tasks, and speaks if you want it to.
    pip install -r requirements.txt
    ```
 3. **Install Ollama** (optional but recommended — offline AI chat):
-   - Download from https://ollama.com
-   - Run: `ollama pull qwen2.5:7b`
+   - Download the Windows installer: https://ollama.com/download/windows
+   - Run `OllamaSetup.exe` — it installs & starts Ollama automatically
+     (icon appears in the system tray)
+   - **Open a NEW terminal window** so it finds the `ollama` command
+   - Pick your model size (old PC? go small!):
+     ```
+     qwen2.5:1.5b   ~1 GB   ultra-light, old/weak PCs
+     qwen2.5:3b     ~2 GB   balanced (recommended default)
+     qwen2.5:7b     ~5 GB   best chat, strong machines only
+     ```
+   - Example: `ollama pull qwen2.5:3b`
+   - Verify: `ollama list`
    - ⚠️ Don't want AI at all? Skip this — core commands work without it.
+   - Switch models later: `ollama pull <model>` + edit `model:` in
+     `config/jarvis.yaml`; free space with `ollama rm <model>`.
+   - **"ollama not recognized"?** → reinstall from the link above, then
+     open a fresh terminal window.
 4. **Voice (optional):**
    ```
    pip install faster-whisper sounddevice pyttsx3
@@ -43,6 +57,23 @@ offline for core tasks, and speaks if you want it to.
    python main.py --voice      # voice mode
    python main.py --selftest   # built-in tests
    ```
+
+## 🖥️ Web UI — movie-style HUD
+
+```
+python main.py --ui
+```
+
+Opens a cinematic interface in your browser (http://localhost:8765):
+- 🌀 Animated arc reactor, particle field, ripple wake effect, boot sequence
+- 📊 **Activity feed** — every command/reply, always recorded
+- 🧠 **AI thinking** panel — intent, confidence %, matched keywords, plugin, LLM used
+- 💾 **Memory usage** — conversations, notes, profile facts, memory file size
+- 💻 **System meters** — live CPU / RAM / disk bars
+- 🎤 Voice button (browser) + fullscreen mode (press F)
+
+With `--voice`, saying the wake word launches this UI in your browser
+with the full boot animation — your own Iron Man moment. 🦾
 
 ## 🧪 Quick examples
 

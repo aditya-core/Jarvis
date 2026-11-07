@@ -1,0 +1,28 @@
+# Jarvis — your offline-first personal assistant
+# Edit freely. Jarvis reads this on every launch.
+
+jarvis:
+  name: Jarvis
+  wake_word: "Hey Jarvis"      # your voice wake phrase (any words you like)
+  personality: |
+    You are Jarvis, a helpful, concise personal assistant.
+    Reply briefly and practically. You live on the user's own computer.
+
+# Local AI brain (Ollama). Fully offline once the model is pulled.
+# Install Ollama from https://ollama.com then run:  ollama pull qwen2.5:7b
+llm:
+  provider: ollama
+  base_url: http://localhost:11434
+  model: qwen2.5:7b            # any model you pulled works here
+  timeout: 60
+  enabled: true                # set false to force pure rule-based mode
+
+voice:
+  enabled: true
+  stt_model: base              # base | small | medium (smaller = faster)
+  tts_engine: pyttsx3          # offline speech (Windows SAPI)
+
+web:
+  backend: duckduckgo          # duckduckgo = free, no API key needed
+
+data_dir: data                 # notes, reminders, memory, screenshots live here

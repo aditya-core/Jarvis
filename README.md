@@ -44,6 +44,23 @@ offline for core tasks, and speaks if you want it to.
    python main.py --selftest   # built-in tests
    ```
 
+## 🖥️ Web UI — movie-style HUD
+
+```
+python main.py --ui
+```
+
+Opens a cinematic interface in your browser (http://localhost:8765):
+- 🌀 Animated arc reactor, particle field, ripple wake effect, boot sequence
+- 📊 **Activity feed** — every command/reply, always recorded
+- 🧠 **AI thinking** panel — intent, confidence %, matched keywords, plugin, LLM used
+- 💾 **Memory usage** — conversations, notes, profile facts, memory file size
+- 💻 **System meters** — live CPU / RAM / disk bars
+- 🎤 Voice button (browser) + fullscreen mode (press F)
+
+With `--voice`, saying the wake word launches this UI in your browser
+with the full boot animation — your own Iron Man moment. 🦾
+
 ## 🧪 Quick examples
 
 ```

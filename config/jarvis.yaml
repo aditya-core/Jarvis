@@ -25,4 +25,9 @@ voice:
 web:
   backend: duckduckgo          # duckduckgo = free, no API key needed
 
+webui:
+  enabled: true
+  host: 0.0.0.0
+  port: 8765                   # Jarvis UI opens at http://localhost:8765
+
 data_dir: data                 # notes, reminders, memory, screenshots live here

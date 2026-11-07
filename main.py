@@ -147,7 +147,10 @@ def selftest(jarvis) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description="Jarvis — offline-first assistant")
     ap.add_argument("--config", default=os.path.join(ROOT, "config", "jarvis.yaml"))
-    ap.add_argument("--voice", action="store_true", help="voice mode")
+    ap.add_argument("--voice", action="store_true",
+                    help="voice mode (auto-launches web UI on wake)")
+    ap.add_argument("--ui", action="store_true",
+                    help="launch the movie-style web UI")
     ap.add_argument("--once", help="run one command and exit")
     ap.add_argument("--offline", action="store_true",
                     help="disable local LLM (pure rules)")
@@ -171,9 +174,29 @@ def main() -> int:
         system.stop()
         return 0
 
+    if args.ui:
+        from jarvis.interfaces.webui import WebUI
+        wcfg = cfg.get("webui", {})
+        WebUI(jarvis, host=wcfg.get("host", "0.0.0.0"),
+              port=int(wcfg.get("port", 8765))).run()
+        system.stop()
+        return 0
+
     if args.voice:
+        import threading
+        import webbrowser
         from jarvis.interfaces.voice import VoiceEngine
-        engine = VoiceEngine(cfg, jarvis.handle, name=cfg["jarvis"]["name"])
+        from jarvis.interfaces.webui import WebUI
+        wcfg = cfg.get("webui", {})
+        port = int(wcfg.get("port", 8765))
+        # web UI runs in the background; wake word opens the browser
+        ui = WebUI(jarvis, host=wcfg.get("host", "0.0.0.0"), port=port)
+        t = threading.Thread(target=ui.run, kwargs={"open_browser": False},
+                             daemon=True)
+        t.start()
+        engine = VoiceEngine(
+            cfg, jarvis.handle, name=cfg["jarvis"]["name"],
+            on_wake=lambda: webbrowser.open(f"http://localhost:{port}/"))
         engine.run()
     else:
         from jarvis.interfaces.chat_ui import ChatUI

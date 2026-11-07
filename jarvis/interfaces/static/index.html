@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>J.A.R.V.I.S.</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+<div class="bg-glow"></div>
+<div id="ripple"></div>
+
+<!-- boot sequence -->
+<div id="boot">
+  <div class="boot-title">J.A.R.V.I.S.</div>
+  <div id="boot-lines"></div>
+</div>
+
+<main class="hud" id="hud">
+  <header class="hud-header">
+    <div class="logo">J.A.R.V.I.S.</div>
+    <div class="chips">
+      <span class="chip" id="chip-brain">BRAIN ●</span>
+      <span class="chip" id="chip-activity">ACTIVITY 0</span>
+      <span class="chip" id="chip-uptime">UPTIME 00:00</span>
+      <span class="chip" id="chip-clock">--:--:--</span>
+      <button id="fullscreen-btn" title="Fullscreen (F)">⛶</button>
+    </div>
+  </header>
+
+  <div class="stage">
+    <section class="panel col">
+      <h2>ACTIVITY FEED</h2>
+      <div id="activity" class="feed"></div>
+    </section>
+
+    <section class="center-col">
+      <div class="reactor-wrap">
+        <svg id="reactor" viewBox="0 0 200 200">
+          <defs>
+            <radialGradient id="coreGrad" cx="50%" cy="50%">
+              <stop offset="0%" stop-color="#a5f3fc"/>
+              <stop offset="60%" stop-color="#22d3ee"/>
+              <stop offset="100%" stop-color="#0e7490"/>
+            </radialGradient>
+          </defs>
+          <circle class="ring r1" cx="100" cy="100" r="92"/>
+          <circle class="ring r2" cx="100" cy="100" r="74"/>
+          <circle class="ring r3" cx="100" cy="100" r="56"/>
+          <circle class="core" cx="100" cy="100" r="34"/>
+          <circle class="inner" cx="100" cy="100" r="12"/>
+        </svg>
+        <div class="orbit-text">ASSISTANT ONLINE</div>
+      </div>
+      <div class="command-line">
+        <input id="cmd-input" placeholder="type a command — e.g. take a note buy milk" autocomplete="off">
+        <button id="send-btn">SEND</button>
+        <button id="voice-btn" title="voice input">🎤</button>
+      </div>
+      <div id="reply" class="reply"></div>
+    </section>
+
+    <section class="panel col">
+      <h2>MEMORY</h2>
+      <div id="memory" class="stats"></div>
+      <h2>AI THINKING</h2>
+      <div id="thinking" class="thinking"></div>
+      <h2>SYSTEM</h2>
+      <div id="system" class="stats"></div>
+    </section>
+  </div>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

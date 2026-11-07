@@ -174,6 +174,14 @@ def main() -> int:
         system.stop()
         return 0
 
+    # Friendly nudge when the local brain isn't installed yet
+    if not jarvis.brain.available():
+        print("💡 Local brain offline — Ollama not detected. "
+              "Jarvis still works fully without it.")
+        print("   To enable AI chat: install from "
+              "https://ollama.com/download/windows,")
+        print("   open a NEW terminal, then run: ollama pull qwen2.5:3b\n")
+
     if args.ui:
         from jarvis.interfaces.webui import WebUI
         wcfg = cfg.get("webui", {})

@@ -27,7 +27,10 @@ offline for core tasks, and speaks if you want it to.
    pip install -r requirements.txt
    ```
 3. **Install Ollama** (optional but recommended — offline AI chat):
-   - Download from https://ollama.com
+   - Download the Windows installer: https://ollama.com/download/windows
+   - Run `OllamaSetup.exe` — it installs & starts Ollama automatically
+     (icon appears in the system tray)
+   - **Open a NEW terminal window** so it finds the `ollama` command
    - Pick your model size (old PC? go small!):
      ```
      qwen2.5:1.5b   ~1 GB   ultra-light, old/weak PCs
@@ -35,9 +38,12 @@ offline for core tasks, and speaks if you want it to.
      qwen2.5:7b     ~5 GB   best chat, strong machines only
      ```
    - Example: `ollama pull qwen2.5:3b`
+   - Verify: `ollama list`
    - ⚠️ Don't want AI at all? Skip this — core commands work without it.
    - Switch models later: `ollama pull <model>` + edit `model:` in
      `config/jarvis.yaml`; free space with `ollama rm <model>`.
+   - **"ollama not recognized"?** → reinstall from the link above, then
+     open a fresh terminal window.
 4. **Voice (optional):**
    ```
    pip install faster-whisper sounddevice pyttsx3

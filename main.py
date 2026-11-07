@@ -33,7 +33,7 @@ DEFAULT_CONFIG = {
     "llm": {
         "provider": "ollama",
         "base_url": "http://localhost:11434",
-        "model": "qwen2.5:7b",
+        "model": "qwen2.5:3b",   # 1.5b = ultra-light | 3b = balanced | 7b = best
         "timeout": 60,
         "enabled": True,
     },

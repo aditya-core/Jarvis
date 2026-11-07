@@ -28,8 +28,16 @@ offline for core tasks, and speaks if you want it to.
    ```
 3. **Install Ollama** (optional but recommended — offline AI chat):
    - Download from https://ollama.com
-   - Run: `ollama pull qwen2.5:7b`
+   - Pick your model size (old PC? go small!):
+     ```
+     qwen2.5:1.5b   ~1 GB   ultra-light, old/weak PCs
+     qwen2.5:3b     ~2 GB   balanced (recommended default)
+     qwen2.5:7b     ~5 GB   best chat, strong machines only
+     ```
+   - Example: `ollama pull qwen2.5:3b`
    - ⚠️ Don't want AI at all? Skip this — core commands work without it.
+   - Switch models later: `ollama pull <model>` + edit `model:` in
+     `config/jarvis.yaml`; free space with `ollama rm <model>`.
 4. **Voice (optional):**
    ```
    pip install faster-whisper sounddevice pyttsx3

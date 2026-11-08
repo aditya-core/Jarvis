@@ -21,11 +21,28 @@ offline for core tasks, and speaks if you want it to.
 
 ## 🚀 Setup (Windows)
 
-1. **Install Python 3.10+** — https://python.org
-2. **Install dependencies:**
+### One-click (easiest) ⭐
+
+Just **double-click `run.bat`** — it finds (or creates) the venv,
+installs everything, and starts Jarvis in chat mode. No typing paths!
+
+| Double-click | What it does |
+|---|---|
+| `run.bat` (or `Jarvis.bat`) | chat mode (movie-style terminal UI) |
+| `run-ui.bat` | movie-style web HUD → http://localhost:8765 |
+| `run-voice.bat` | voice mode (wake word + speech) |
+| `run-selftest.bat` | runs the 22/22 test suite |
+
+### Manual setup
+
+1. **Install Python 3.10+** — https://python.org (check "Add to PATH")
+2. **Create the venv and install dependencies:**
    ```
+   python -m venv venv
+   venv\Scripts\activate
    pip install -r requirements.txt
    ```
+3. **Run:** `python main.py` — or just double-click `run.bat`
 3. **Install a local AI brain** (optional but recommended — offline AI chat).
    Two options, pick ONE:
 
@@ -169,6 +186,17 @@ Good morning, sir.
 ```
 
 ## 🛠️ Troubleshooting
+
+**`can't open file '...main.py': No such file or directory`** — you're in
+the wrong folder. `main.py` lives in the `Jarvis` folder — or just
+double-click `run.bat` (it changes to the right folder itself).
+
+**`ModuleNotFoundError: No module named 'rich'`** — you ran the system
+Python instead of the venv (common with `py main.py`). Use `python main.py`
+after activating, or just double-click `run.bat` — it finds the venv for you.
+
+**`Invalid argument` / weird quoted path errors** — don't paste full paths
+into the terminal. Run from the `Jarvis` folder, or double-click `run.bat`.
 
 **`ollama is not recognized`** — Ollama not installed or terminal is stale:
 open a **new** terminal window, or reinstall from ollama.com.

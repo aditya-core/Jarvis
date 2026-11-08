@@ -11,6 +11,8 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.prompt import Prompt
 
+from ..core.phrases import welcome_phrase
+
 
 class ChatUI:
     def __init__(self, name: str = "Jarvis"):
@@ -37,6 +39,7 @@ class ChatUI:
 
     def run(self, jarvis) -> None:
         self.banner()
+        self.jarvis(welcome_phrase(getattr(jarvis, "phrases", {})))
         while True:
             try:
                 line = Prompt.ask("[bold]You[/]")

@@ -20,17 +20,19 @@ import time
 from rich.console import Console
 
 from ..core.parser import similar
+from ..core.phrases import P, welcome_phrase
 
 
 class VoiceEngine:
     def __init__(self, cfg: dict, handle_command, name: str = "Jarvis",
-                 on_wake=None):
+                 on_wake=None, phrases: dict | None = None):
         vcfg = (cfg or {}).get("voice", {}) or {}
         self.cfg = vcfg
         self.wake_word = (cfg or {}).get("jarvis", {}).get("wake_word",
                                                            "Hey Jarvis")
         self.handle_command = handle_command
         self.on_wake = on_wake
+        self.phrases = phrases or {}
         self.name = name
         self.console = Console()
         self.sd = None
@@ -153,19 +155,28 @@ class VoiceEngine:
         self.console.print(
             f"[bold cyan]🎤 Voice mode on — wake word: "
             f"\"{self.wake_word}\"[/]\n[dim]Ctrl+C to stop[/]")
+        welcome = welcome_phrase(self.phrases)
+        self.console.print(f"[bold cyan]{welcome}[/]")
+        self.speak(welcome)
         try:
             while True:
                 self.console.print(
                     f"[cyan]Listening for wake word...[/]")
                 phrase = self._listen_for_wake()
                 if self._is_wake(phrase):
-                    self.console.print("[green]✓ wake word heard[/]")
+                    self.console.print(
+                        "[green]✓ wake word heard — launching Jarvis...[/]")
+                    # Launch the full Jarvis experience right now:
+                    # UI opens + spoken greeting, zero dead time
                     if self.on_wake:
                         try:
                             self.on_wake()
                         except Exception:
                             pass
-                    self.speak("Yes?")
+                    launch = P(self.phrases, "wake_launch",
+                               "Yes, sir. Jarvis online — what's your command?")
+                    self.console.print(f"[bold cyan]{launch}[/]")
+                    self.speak(launch)
                     text = self._listen_command()
                     if not text.strip():
                         self.console.print("[yellow]didn't catch that[/]")

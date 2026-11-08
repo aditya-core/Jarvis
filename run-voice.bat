@@ -3,6 +3,8 @@ setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
 rem ---- Jarvis voice mode launcher ----
+rem silence the harmless Windows HuggingFace symlink warning
+set "HF_HUB_DISABLE_SYMLINKS_WARNING=1"
 set "PY=%~dp0venv\Scripts\python.exe"
 if not exist "!PY!" set "PY=%~dp0..\venv\Scripts\python.exe"
 

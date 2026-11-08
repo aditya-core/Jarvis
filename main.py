@@ -19,6 +19,8 @@ import sys
 
 import yaml
 
+from jarvis.core.phrases import load_phrases
+
 ROOT = os.path.dirname(os.path.abspath(__file__))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
@@ -31,15 +33,18 @@ DEFAULT_CONFIG = {
                         "assistant. Reply briefly and practically."),
     },
     "llm": {
-        "provider": "ollama",
-        "base_url": "http://localhost:11434",
-        "model": "qwen2.5:3b",   # 1.5b = ultra-light | 3b = balanced | 7b = best
+        "provider": "llamaserver",  # llamaserver | llamacpp | ollama
+        "base_url": "http://localhost:8080/v1",  # llamaserver
+        "model": "local",            # llamaserver
+        "model_path": "",            # llamacpp
+        "n_ctx": 2048,
         "timeout": 60,
         "enabled": True,
     },
     "voice": {"enabled": True, "stt_model": "base", "tts_engine": "pyttsx3"},
     "web": {"backend": "duckduckgo"},
     "data_dir": "data",
+    "phrases": {},
 }
 
 
@@ -58,10 +63,62 @@ def load_config(path: str) -> dict:
         with open(path, encoding="utf-8") as f:
             loaded = yaml.safe_load(f) or {}
         _deep_merge(cfg, loaded)
+    # personality & phrases (local training library)
+    phrases_path = os.path.join(os.path.dirname(os.path.abspath(path)),
+                                "phrases.yaml")
+    cfg["phrases"] = load_phrases(phrases_path)
     data_dir = cfg.get("data_dir", "data")
     if not os.path.isabs(data_dir):
         cfg["data_dir"] = os.path.join(ROOT, data_dir)
     return cfg
+
+
+def start_llama_server(cfg: dict) -> int:
+    """Launch the llama.cpp brain server (--start-server)."""
+    import socket
+    import subprocess
+
+    ls = cfg.get("llamaserver", {}) or {}
+    exe = ls.get("exe_path", "")
+    model = ls.get("model_path", "")
+    port = int(ls.get("port", 8080))
+
+    # is a server already running on that port?
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(1)
+        if s.connect_ex(("127.0.0.1", port)) == 0:
+            print(f"🧠 llama.cpp server already running at "
+                  f"http://localhost:{port}/v1")
+            print("   Just start Jarvis — it will connect automatically.")
+            return 0
+
+    if not exe or not os.path.exists(exe):
+        print(f"❌ llama-server.exe not found: {exe or '(empty path)'}")
+        print("   Edit config/jarvis.yaml → llamaserver.exe_path and set it to")
+        print("   the folder where you extracted the zip (look for llama-server.exe).")
+        return 1
+    if not model or not os.path.exists(model):
+        print(f"❌ Model file not found: {model or '(empty path)'}")
+        print("   Download it from:")
+        print("   https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF")
+        print("   (file: qwen2.5-1.5b-instruct-q4_k_m.gguf, ~1 GB), save to:")
+        print("   C:\\models\\  then set model_path in config/jarvis.yaml.")
+        return 1
+
+    print(f"🧠 Starting llama.cpp brain server on port {port}...")
+    print(f"   model: {model}")
+    try:
+        proc = subprocess.Popen([exe, "-m", model, "--port", str(port)])
+    except Exception as e:
+        print(f"❌ Could not launch {exe}: {e}")
+        return 1
+    print("   Server is starting — keep this window open while using Jarvis.")
+    print(f"   Jarvis will detect it at http://localhost:{port}/v1")
+    try:
+        proc.wait()
+    except KeyboardInterrupt:
+        proc.terminate()
+    return 0
 
 
 def build_jarvis(cfg: dict, confirm_cb=None, notify_cb=None):
@@ -129,6 +186,14 @@ def selftest(jarvis) -> int:
     check("web search handled", True)
     print("    ->", r.split("\n")[0][:100])
 
+    # --- phrases / personality ----------------------------------------
+    ph = load_phrases(os.path.join(ROOT, "config", "phrases.yaml"))
+    check("phrases loaded", ph.get("wake") == "Yes, sir?")
+    check("wake launch phrase", "Jarvis online" in ph.get("wake_launch", ""))
+    check("welcome phrases", len(ph.get("welcome", [])) == 3)
+    r = jarvis.handle("hello jarvis")
+    check("greet uses welcome phrase", "sir" in r.lower())
+
     # --- brain / memory ------------------------------------------------
     print(f"  [i] Ollama local LLM: {'available' if jarvis.brain.available() else 'not running (core commands still work)'}")
     o = jarvis.memory.recall("selftest")
@@ -155,6 +220,8 @@ def main() -> int:
     ap.add_argument("--offline", action="store_true",
                     help="disable local LLM (pure rules)")
     ap.add_argument("--selftest", action="store_true", help="run built-in tests")
+    ap.add_argument("--start-server", action="store_true",
+                    help="launch the llama.cpp brain server")
     ap.add_argument("--wake-word", help="override wake word")
     args = ap.parse_args()
 
@@ -163,6 +230,9 @@ def main() -> int:
         cfg["llm"]["enabled"] = False
     if args.wake_word:
         cfg["jarvis"]["wake_word"] = args.wake_word
+
+    if args.start_server:
+        return start_llama_server(cfg)
 
     jarvis, system = build_jarvis(cfg)
 
@@ -174,13 +244,16 @@ def main() -> int:
         system.stop()
         return 0
 
-    # Friendly nudge when the local brain isn't installed yet
+    # Friendly nudge when the local brain isn't available yet
     if not jarvis.brain.available():
-        print("💡 Local brain offline — Ollama not detected. "
+        print("💡 Local brain offline — no AI model detected. "
               "Jarvis still works fully without it.")
-        print("   To enable AI chat: install from "
-              "https://ollama.com/download/windows,")
-        print("   open a NEW terminal, then run: ollama pull qwen2.5:3b\n")
+        print("   To enable AI chat — lightest option (old PCs):")
+        print("     1) download the llama.cpp Windows build from")
+        print("        github.com/ggml-org/llama.cpp/releases/latest")
+        print("     2) download a .gguf model (~1 GB) from huggingface.co/Qwen")
+        print("     3) run: llama-server.exe -m model.gguf --port 8080")
+        print("   (or install Ollama from https://ollama.com)\n")
 
     if args.ui:
         from jarvis.interfaces.webui import WebUI
@@ -202,9 +275,13 @@ def main() -> int:
         t = threading.Thread(target=ui.run, kwargs={"open_browser": False},
                              daemon=True)
         t.start()
+        def _launch_ui():
+            print(f"🖥️  Jarvis UI launched → http://localhost:{port}/")
+            webbrowser.open(f"http://localhost:{port}/")
         engine = VoiceEngine(
             cfg, jarvis.handle, name=cfg["jarvis"]["name"],
-            on_wake=lambda: webbrowser.open(f"http://localhost:{port}/"))
+            phrases=cfg.get("phrases", {}),
+            on_wake=_launch_ui)
         engine.run()
     else:
         from jarvis.interfaces.chat_ui import ChatUI

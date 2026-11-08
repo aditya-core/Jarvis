@@ -1,0 +1,29 @@
+# Jarvis's personality & phrases — your local 'training' library.
+# Edit freely, restart Jarvis — no code changes needed.
+#
+# Available keys (leave any out to keep the default):
+#   address, wake, wake_launch, welcome (list: morning / afternoon / evening),
+#   goodbye, note_saved, notes_empty, opening_app, app_not_found,
+#   opening_file, file_not_found, screenshot_saved, screenshot_fail,
+#   reminder_set, reminder_no_time, time, system_header,
+#   search_results, search_unavailable, fallback, help
+#
+# {placeholders} get filled with: content, path, app, file, summary,
+# time, q, err — use them inside phrases, e.g. "Opening {app}, sir..."
+
+phrases:
+  address: sir
+  wake: "Yes, sir?"
+  # full launch message — spoken when Jarvis launches on the wake word
+  wake_launch: "Yes, sir. Jarvis online — what's your command?"
+  welcome:
+    - "Good morning, sir."
+    - "Good afternoon, sir."
+    - "Good evening, sir."
+  goodbye: "Goodbye, sir. See you soon."
+  note_saved: '📝 Noted, sir. "{content}"'
+  opening_app: "🚀 Opening {app}, sir..."
+  opening_file: "📂 Opening {file}, sir..."
+  screenshot_saved: "📸 Screenshot saved, sir."
+  reminder_set: "⏰ Reminder set, sir. {summary}"
+  time: "🕒 {time}, sir"

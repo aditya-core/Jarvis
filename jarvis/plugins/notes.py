@@ -12,6 +12,8 @@ import os
 import re
 from datetime import datetime
 
+from ..core.phrases import P
+
 
 class NotesPlugin:
     name = "notes"
@@ -25,7 +27,7 @@ class NotesPlugin:
         if cmd.intent_id == "note":
             return self._save(cmd, ctx)
         if cmd.intent_id == "show_notes":
-            return self._show()
+            return self._show(ctx)
         return None
 
     def _save(self, cmd, ctx) -> str:
@@ -43,12 +45,15 @@ class NotesPlugin:
         if m:
             ctx.memory.profile_fact(m.group(1).strip())
 
-        return f"📝 Noted: \"{content}\"\n   saved to {fname}"
+        return P(ctx.phrases, "note_saved",
+                 '📝 Noted: "{content}"\n   saved to {path}',
+                 content=content, path=fname)
 
-    def _show(self) -> str:
+    def _show(self, ctx) -> str:
         files = sorted(glob.glob(os.path.join(self.dir, "*.md")), reverse=True)[:8]
         if not files:
-            return "📭 No notes yet — say \"take a note ...\""
+            return P(ctx.phrases, "notes_empty",
+                     "📭 No notes yet — say \"take a note ...\"")
         lines = ["📋 Recent notes:"]
         for f in files:
             try:

@@ -24,6 +24,7 @@ from datetime import datetime, timedelta
 import psutil
 
 from ..core.parser import APP_ALIASES, similar
+from ..core.phrases import P
 
 
 def _open_target(path: str) -> None:
@@ -119,12 +120,15 @@ class SystemPlugin:
     def _open_app(self, cmd, ctx) -> str:
         target = self._resolve_app(cmd.entity)
         if not target:
-            return f"🚀 Couldn't find \"{cmd.entity or 'that app'}\". Try another name."
+            return P(ctx.phrases, "app_not_found",
+                     '🚀 Couldn\'t find "{app}". Try another name.',
+                     app=cmd.entity or "that app")
         try:
             _open_target(target)
         except Exception as e:
             return f"🚀 Couldn't launch {os.path.basename(target)}: {e}"
-        return f"🚀 Opening {os.path.basename(target)}..."
+        return P(ctx.phrases, "opening_app", "🚀 Opening {app}...",
+                 app=os.path.basename(target))
 
     # ------------------------------------------------------------------
     def _find_file(self, name: str) -> str | None:
@@ -146,13 +150,15 @@ class SystemPlugin:
     def _open_file(self, cmd, ctx) -> str:
         target = self._find_file(cmd.entity)
         if not target:
-            return (f"📂 Couldn't find \"{cmd.entity or 'that file'}\". "
-                    "Try the full path.")
+            return P(ctx.phrases, "file_not_found",
+                     '📂 Couldn\'t find "{file}". Try the full path.',
+                     file=cmd.entity or "that file")
         try:
             _open_target(target)
         except Exception as e:
             return f"📂 Couldn't open {os.path.basename(target)}: {e}"
-        return f"📂 Opening {os.path.basename(target)}..."
+        return P(ctx.phrases, "opening_file", "📂 Opening {file}...",
+                 file=os.path.basename(target))
 
     # ------------------------------------------------------------------
     def _screenshot(self, cmd, ctx) -> str:
@@ -167,13 +173,16 @@ class SystemPlugin:
                 shot = sct.grab(sct.monitors[1])
             out = os.path.join(out_dir, f"shot_{datetime.now():%Y%m%d_%H%M%S}.png")
             mss.tools.to_png(shot.rgb, shot.size, output=out)
-            return f"📸 Screenshot saved: {out}"
+            return P(ctx.phrases, "screenshot_saved",
+                     "📸 Screenshot saved: {path}", path=out)
         except Exception as e:
-            return f"⚠️ Screenshot failed: {e}"
+            return P(ctx.phrases, "screenshot_fail",
+                     "⚠️ Screenshot failed: {err}", err=str(e))
 
     # ------------------------------------------------------------------
     def _system_info(self, cmd, ctx) -> str:
-        lines = ["💻 System status:"]
+        header = P(ctx.phrases, "system_header", "💻 System status:")
+        lines = [header]
         lines.append(f"  • OS: {sys.platform} ({os.name})")
         vm = psutil.virtual_memory()
         lines.append(f"  • RAM: {vm.used // (1024**2)} MB / "
@@ -194,7 +203,8 @@ class SystemPlugin:
 
     def _time(self, cmd, ctx) -> str:
         now = datetime.now()
-        return f"🕒 {now:%H:%M} — {now:%A, %B %d, %Y}"
+        return P(ctx.phrases, "time", "🕒 {time}",
+                 time=f"{now:%H:%M} — {now:%A, %B %d, %Y}")
 
     # ------------------------------------------------------------------
     def _parse_when(self, text: str) -> datetime | None:
@@ -238,8 +248,8 @@ class SystemPlugin:
         # parse the time from the full sentence (keeps 'at'/'in' intact)
         dt = self._parse_when(raw)
         if dt is None:
-            return ("⏰ Sure — but when? Example: "
-                    "\"remind me to call mom at 9pm\"")
+            return P(ctx.phrases, "reminder_no_time",
+                     '⏰ Sure — but when? Example: "remind me to call mom at 9pm"')
         # clean the message: drop the trailing time phrase
         content = entity
         content = re.sub(r"\s*\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s*"
@@ -261,7 +271,9 @@ class SystemPlugin:
         data.append(reminder)
         with open(self.reminders_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
-        return f"⏰ Reminder set: {content} — at {dt:%H:%M} on {dt:%A}"
+        summary = content[:1].upper() + content[1:] if content else content
+        return P(ctx.phrases, "reminder_set", "⏰ Reminder set: {summary}",
+                 summary=f"{summary} — at {dt:%H:%M} on {dt:%A}")
 
     def _poll_reminders(self) -> None:
         while not self._stop.is_set():

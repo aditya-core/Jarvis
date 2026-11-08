@@ -12,9 +12,10 @@ from datetime import datetime
 
 from . import parser as P
 from .activity import ActivityLog
-from .brain import Brain
+from .brain import make_brain
 from .memory import Memory
 from .permissions import Permissions
+from .phrases import P as phrase, welcome_phrase
 
 HELP_TEXT = (
     "🤖 I can do a lot locally — try:\n"
@@ -24,7 +25,6 @@ HELP_TEXT = (
     "   🔍  \"search python tutorials\"\n"
     "   ⏰  \"remind me to call mom at 9pm\"\n"
     "   💻  \"system status\" / \"what time is it\"\n"
-    "   💬  ask me anything — with Ollama running I can chat too\n"
     "   (spell mistakes are fine — I figure them out)"
 )
 
@@ -33,7 +33,8 @@ class Orchestrator:
     def __init__(self, cfg: dict, confirm_cb=None, notify_cb=None):
         self.cfg = cfg or {}
         self.data_dir = self.cfg.get("data_dir", "data")
-        self.brain = Brain(self.cfg)
+        self.phrases = self.cfg.get("phrases", {})
+        self.brain = make_brain(self.cfg)
         self.memory = Memory(self.data_dir)
         self.activity = ActivityLog(self.data_dir)
         self.permissions = Permissions(confirm_cb)
@@ -73,11 +74,12 @@ class Orchestrator:
             except Exception as e:
                 reply = f"⚠️  Something went wrong: {e}"
         elif cmd.intent_id == "help":
-            reply = HELP_TEXT
+            reply = phrase(self.phrases, "help", HELP_TEXT)
         elif cmd.intent_id == "greet":
             reply = self._greet()
         elif cmd.intent_id == "exit":
-            reply = "Goodbye! See you soon. 👋"
+            reply = phrase(self.phrases, "goodbye",
+                           "Goodbye! See you soon. 👋")
         elif self.brain.available():
             reply = self._llm_chat(text)
         else:
@@ -111,12 +113,7 @@ class Orchestrator:
 
     # ------------------------------------------------------------------
     def _greet(self) -> str:
-        h = datetime.now().hour
-        if h < 12:
-            return "Good morning! ☀️ What can I do for you?"
-        if h < 18:
-            return "Good afternoon! 🌤️ What can I do for you?"
-        return "Good evening! 🌙 What can I do for you?"
+        return welcome_phrase(self.phrases)
 
     def _llm_chat(self, text: str) -> str:
         facts = self.memory.profile.get("facts", [])
@@ -136,11 +133,5 @@ class Orchestrator:
             return reply
         return self._fallback(P.parse(text))
 
-    @staticmethod
-    def _fallback(cmd) -> str:
-        return (
-            "😕 I didn't quite catch that. I can help with: notes, opening "
-            "apps/files, screenshots, web search, reminders, system info and "
-            "time. Try: \"take a note ...\", \"open chrome\", \"screenshot\", "
-            "\"search ...\", \"remind me to ... at 9pm\" — or type \"help\"."
-        )
+    def _fallback(self, cmd) -> str:
+        return phrase(self.phrases, "fallback")

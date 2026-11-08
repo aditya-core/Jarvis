@@ -8,20 +8,19 @@ jarvis:
     You are Jarvis, a helpful, concise personal assistant.
     Reply briefly and practically. You live on the user's own computer.
 
-# Local AI brain (Ollama). Fully offline once the model is pulled.
-# Install Ollama from https://ollama.com then run:  ollama pull qwen2.5:3b
-#
-# Model size guide (disk space + RAM while running):
-#   qwen2.5:1.5b  ~1 GB  — ultra-light, great for old/weak PCs
-#   qwen2.5:3b    ~2 GB  — best balance (default)
-#   qwen2.5:7b    ~5 GB  — best chat quality, needs a strong machine
-# Switch anytime: edit model below + `ollama pull <model>`.
+# Local AI brain — OPTIONAL. Left disabled: Jarvis works fully in
+# rule-based mode (no AI needed for all commands). Enable only if you
+# set up llama-server or Ollama later.
 llm:
-  provider: ollama
-  base_url: http://localhost:11434
-  model: qwen2.5:3b            # any model you pulled works here
+  provider: llamaserver
+  base_url: http://localhost:8080/v1
+  model: local
+  n_ctx: 2048
   timeout: 60
-  enabled: true                # set false to force pure rule-based mode
+  enabled: false              # set true when llama-server/ollama is running
+
+# Personality & canned phrases live in phrases.yaml — your local
+# 'training' library. Edit it, restart Jarvis, done.
 
 voice:
   enabled: true
@@ -35,5 +34,11 @@ webui:
   enabled: true
   host: 0.0.0.0
   port: 8765                   # Jarvis UI opens at http://localhost:8765
+
+# ---- llama.cpp server launcher (for --start-server) ----
+llamaserver:
+  exe_path: C:\llamacpp\llama-server.exe        # where YOU extracted the zip
+  model_path: C:\models\qwen2.5-1.5b-instruct-q4_k_m.gguf
+  port: 8080
 
 data_dir: data                 # notes, reminders, memory, screenshots live here

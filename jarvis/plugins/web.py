@@ -11,6 +11,8 @@ from urllib.parse import parse_qs, unquote, urlparse
 import requests
 from bs4 import BeautifulSoup
 
+from ..core.phrases import P
+
 
 class WebPlugin:
     name = "web"
@@ -24,11 +26,13 @@ class WebPlugin:
         q = cmd.entity.strip()
         if not q:
             return "🔍 What should I search for?"
+        phrases = getattr(ctx, "phrases", {}) or {}
         try:
-            return self.search(q)
+            return self.search(q, phrases=phrases)
         except Exception as e:
-            return (f"⚠️ Web search unavailable: {e}\n"
-                    f"   Try manually: https://www.google.com/search?q={unquote(q)}")
+            return (P(phrases, "search_unavailable",
+                      "⚠️ Web search unavailable: {err}", err=str(e)) +
+                    f"\n   Try manually: https://www.google.com/search?q={unquote(q)}")
 
     @staticmethod
     def _unwrap(href: str) -> str:
@@ -42,7 +46,7 @@ class WebPlugin:
             pass
         return href
 
-    def search(self, q: str, n: int = 5) -> str:
+    def search(self, q: str, n: int = 5, phrases: dict | None = None) -> str:
         if self.backend != "duckduckgo":
             return f"⚠️ Unknown backend: {self.backend}"
         headers = {
@@ -64,7 +68,7 @@ class WebPlugin:
             results = self._parse(resp.text, n)
         if not results:
             return "🔍 No results found."
-        lines = [f"🔍 Results for \"{q}\":"]
+        lines = [P(phrases, "search_results", '🔍 Results for "{q}":', q=q)]
         for i, (title, url, snip) in enumerate(results, 1):
             lines.append(f"{i}. {title}\n   {url}\n   {snip[:180]}")
         return "\n".join(lines)

@@ -17,9 +17,27 @@ import copy
 import os
 import sys
 
-import yaml
+# ----- friendly setup errors (no raw tracebacks) ----------------------
+def _missing(module: str) -> None:
+    print(f"⚠️  Missing required module: {module}")
+    print("   Jarvis needs its dependencies — fix in one step:")
+    print("     1) double-click  run.bat   (creates venv + installs deps)")
+    print("     or, if the venv already exists:")
+    print("        venv\\Scripts\\activate")
+    print("        pip install -r requirements.txt")
+    print("        python main.py")
+    sys.exit(1)
 
-from jarvis.core.phrases import load_phrases
+
+try:
+    import yaml
+except ModuleNotFoundError:
+    _missing("PyYAML")
+
+try:
+    from jarvis.core.phrases import load_phrases
+except ModuleNotFoundError:
+    _missing("jarvis package")
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 if ROOT not in sys.path:
@@ -210,6 +228,12 @@ def selftest(jarvis) -> int:
 
 # ----------------------------------------------------------------------
 def main() -> int:
+    # --- sanity check: are we in the project venv? -------------------
+    if sys.base_prefix == sys.prefix:
+        print("⚠️  Note: running on system Python, not the project venv.")
+        print("   If you hit a missing-module error, just double-click run.bat —")
+        print("   it finds (or creates) the venv and installs everything.\n")
+
     ap = argparse.ArgumentParser(description="Jarvis — offline-first assistant")
     ap.add_argument("--config", default=os.path.join(ROOT, "config", "jarvis.yaml"))
     ap.add_argument("--voice", action="store_true",
@@ -256,7 +280,10 @@ def main() -> int:
         print("   (or install Ollama from https://ollama.com)\n")
 
     if args.ui:
-        from jarvis.interfaces.webui import WebUI
+        try:
+            from jarvis.interfaces.webui import WebUI
+        except ModuleNotFoundError as e:
+            _missing(e.name or "flask (web UI)")
         wcfg = cfg.get("webui", {})
         WebUI(jarvis, host=wcfg.get("host", "0.0.0.0"),
               port=int(wcfg.get("port", 8765))).run()
@@ -266,8 +293,11 @@ def main() -> int:
     if args.voice:
         import threading
         import webbrowser
-        from jarvis.interfaces.voice import VoiceEngine
-        from jarvis.interfaces.webui import WebUI
+        try:
+            from jarvis.interfaces.voice import VoiceEngine
+            from jarvis.interfaces.webui import WebUI
+        except ModuleNotFoundError as e:
+            _missing(e.name or "voice libraries (faster-whisper / sounddevice)")
         wcfg = cfg.get("webui", {})
         port = int(wcfg.get("port", 8765))
         # web UI runs in the background; wake word opens the browser
@@ -284,7 +314,10 @@ def main() -> int:
             on_wake=_launch_ui)
         engine.run()
     else:
-        from jarvis.interfaces.chat_ui import ChatUI
+        try:
+            from jarvis.interfaces.chat_ui import ChatUI
+        except ModuleNotFoundError as e:
+            _missing(e.name or "rich (chat UI)")
         ChatUI(cfg["jarvis"]["name"]).run(jarvis)
 
     system.stop()

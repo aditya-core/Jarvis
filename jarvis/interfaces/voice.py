@@ -14,6 +14,7 @@ and you can still use chat mode.
 
 from __future__ import annotations
 
+import os
 import re
 import time
 
@@ -44,6 +45,9 @@ class VoiceEngine:
     def _ensure_libs(self) -> None:
         if self._loaded:
             return
+        # Windows can't symlink the HuggingFace cache — silence the
+        # "degraded caching" warning (harmless, just uses more disk)
+        os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
         try:
             import sounddevice as sd
             self.sd = sd

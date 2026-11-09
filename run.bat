@@ -3,6 +3,7 @@ setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
 rem ---- Jarvis launcher: finds (or creates) the venv, runs main.py ----
+rem ---- ONE click = voice + web UI + local brain (all-in-one) ----
 set "PY=%~dp0venv\Scripts\python.exe"
 if not exist "!PY!" set "PY=%~dp0..\venv\Scripts\python.exe"
 
@@ -15,5 +16,5 @@ if not exist "!PY!" (
     "!PY!" -m pip install -q -r requirements.txt
 )
 
-echo [Jarvis] Starting...
-"!PY!" main.py %*
+echo [Jarvis] Starting everything - voice ^+ web UI ^+ local brain...
+"!PY!" main.py --all %*

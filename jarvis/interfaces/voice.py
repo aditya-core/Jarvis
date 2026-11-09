@@ -39,6 +39,7 @@ class VoiceEngine:
         self.sd = None
         self.whisper = None
         self.tts = None
+        self._input_dev = None
         self._loaded = False
 
     # ------------------------------------------------------------------
@@ -53,6 +54,7 @@ class VoiceEngine:
             self.sd = sd
         except Exception:
             pass
+        self._input_dev = self._find_input_device() if self.sd is not None else None
         if self.sd is not None:
             try:
                 import numpy as np  # noqa: F401
@@ -72,9 +74,22 @@ class VoiceEngine:
     def _record(self, seconds: float) -> "object":
         sr = 16000
         n = int(seconds * sr)
-        rec = self.sd.rec(n, samplerate=sr, channels=1, dtype="float32")
+        rec = self.sd.rec(n, samplerate=sr, channels=1, dtype="float32",
+                          device=self._input_dev)
         self.sd.wait()
         return rec[:, 0]
+
+    @staticmethod
+    def _find_input_device():
+        """Pick the first usable microphone (returns device index or None)."""
+        try:
+            import sounddevice as sd
+            for i, d in enumerate(sd.query_devices()):
+                if d.get("max_input_channels", 0) > 0:
+                    return i
+        except Exception:
+            pass
+        return None
 
     def _transcribe(self, audio) -> str:
         segments, _ = self.whisper.transcribe(audio, language="en", beam_size=1)
@@ -98,8 +113,20 @@ class VoiceEngine:
         """Listen until the wake word is heard; returns what was heard."""
         deadline = time.time() + timeout
         last = ""
+        errors = 0
         while time.time() < deadline:
-            audio = self._record(2.5)
+            try:
+                audio = self._record(2.5)
+                errors = 0
+            except Exception as e:
+                errors += 1
+                if errors >= 3:
+                    self.console.print(f"[yellow]🎤 microphone error: {e}[/]")
+                    self.console.print("   Check your mic in Windows Settings →")
+                    self.console.print("   System → Sound → Input, then restart Jarvis.")
+                    return ""
+                time.sleep(0.5)
+                continue
             try:
                 text = self._transcribe(audio)
             except Exception:
@@ -154,6 +181,13 @@ class VoiceEngine:
                 f"[yellow]⚠️ Voice libraries missing. Install:[/]\n"
                 f"   pip install {' '.join(missing)}\n"
                 f"[yellow](Chat mode still works without them)[/]")
+            return
+
+        if self._input_dev is None:
+            self.console.print(
+                "[yellow]🎤 No microphone found![/]\n"
+                "   Plug in a mic (or enable your laptop's built-in one) and restart.\n"
+                "   Check: Windows Settings → System → Sound → Input")
             return
 
         self.console.print(

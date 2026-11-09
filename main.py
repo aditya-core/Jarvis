@@ -4,6 +4,7 @@ Jarvis — your offline-first personal assistant.
 
 Usage:
   python main.py                  # chat mode
+  python main.py --all            # everything: voice + web UI + local brain
   python main.py --voice          # voice mode (wake word + speech)
   python main.py --once "open chrome"   # run one command and exit
   python main.py --selftest       # run built-in tests
@@ -139,6 +140,57 @@ def start_llama_server(cfg: dict) -> int:
     return 0
 
 
+def launch_brain_background(cfg: dict):
+    """Start llama-server.exe in the background (for --all mode).
+    Returns the process handle, or None if not configured / failed."""
+    import socket
+    import subprocess
+    import time
+
+    ls = cfg.get("llamaserver", {}) or {}
+    exe = ls.get("exe_path", "")
+    model = ls.get("model_path", "")
+    port = int(ls.get("port", 8080))
+
+    def _port_open() -> bool:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(1)
+            return s.connect_ex(("127.0.0.1", port)) == 0
+
+    if _port_open():
+        print(f"🧠 Brain already running at http://localhost:{port}/v1")
+        return None
+
+    if not exe or not os.path.exists(exe) or not model or not os.path.exists(model):
+        print("⚠️  Local brain not configured (or files missing) — Jarvis runs")
+        print("   in full offline mode without it. Setup: see README.md → Setup.")
+        return None
+
+    log_path = os.path.join(cfg.get("data_dir", "data"), "brain.log")
+    print(f"🧠 Starting llama.cpp brain server on port {port}...")
+    print(f"   model: {model}")
+    try:
+        proc = subprocess.Popen(
+            [exe, "-m", model, "--port", str(port)],
+            stdout=open(log_path, "w"),
+            stderr=subprocess.STDOUT,
+            creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP
+                           if os.name == "nt" else 0))
+    except Exception as e:
+        print(f"⚠️  Could not launch brain: {e}")
+        return None
+
+    deadline = time.time() + 90
+    while time.time() < deadline:
+        if _port_open():
+            print(f"✅ Brain online at http://localhost:{port}/v1")
+            print("   (logs: data/brain.log)")
+            return proc
+        time.sleep(1)
+    print("⚠️  Brain still starting — Jarvis will connect when it's up.")
+    return proc
+
+
 def build_jarvis(cfg: dict, confirm_cb=None, notify_cb=None):
     from jarvis.core.orchestrator import Orchestrator
     from jarvis.plugins.notes import NotesPlugin
@@ -238,6 +290,8 @@ def main() -> int:
     ap.add_argument("--config", default=os.path.join(ROOT, "config", "jarvis.yaml"))
     ap.add_argument("--voice", action="store_true",
                     help="voice mode (auto-launches web UI on wake)")
+    ap.add_argument("--all", action="store_true",
+                    help="launch everything: voice + web UI + local brain")
     ap.add_argument("--ui", action="store_true",
                     help="launch the movie-style web UI")
     ap.add_argument("--once", help="run one command and exit")
@@ -287,6 +341,53 @@ def main() -> int:
         wcfg = cfg.get("webui", {})
         WebUI(jarvis, host=wcfg.get("host", "0.0.0.0"),
               port=int(wcfg.get("port", 8765))).run()
+        system.stop()
+        return 0
+
+    if args.all:
+        import threading
+        import webbrowser
+        try:
+            from jarvis.interfaces.voice import VoiceEngine
+            from jarvis.interfaces.webui import WebUI
+        except ModuleNotFoundError as e:
+            _missing(e.name or "voice libraries (faster-whisper / sounddevice)")
+        wcfg = cfg.get("webui", {})
+        port = int(wcfg.get("port", 8765))
+
+        print("\n🤖 Jarvis — launching everything...")
+        # 1) local brain (background, if configured)
+        launch_brain_background(cfg)
+        # 2) voice libs available?
+        try:
+            import sounddevice  # noqa: F401
+            import faster_whisper  # noqa: F401
+            voice_ok = True
+        except Exception:
+            voice_ok = False
+
+        if voice_ok:
+            # 2a) web UI in background; wake word opens the browser
+            ui = WebUI(jarvis, host=wcfg.get("host", "0.0.0.0"), port=port)
+            t = threading.Thread(target=ui.run, kwargs={"open_browser": False},
+                                 daemon=True)
+            t.start()
+            # 3a) voice engine (main thread)
+            def _launch_ui():
+                print(f"🖥️  Jarvis UI launched → http://localhost:{port}/")
+                webbrowser.open(f"http://localhost:{port}/")
+            engine = VoiceEngine(
+                cfg, jarvis.handle, name=cfg["jarvis"]["name"],
+                phrases=cfg.get("phrases", {}),
+                on_wake=_launch_ui)
+            engine.run()
+        else:
+            # 2b) UI-only fallback (voice libs not installed)
+            print("⚠️  Voice libraries not installed — running UI-only mode.")
+            print("   To add voice:  pip install faster-whisper sounddevice pyttsx3")
+            print("   Then restart — one click starts everything.")
+            ui = WebUI(jarvis, host=wcfg.get("host", "0.0.0.0"), port=port)
+            ui.run()
         system.stop()
         return 0
 

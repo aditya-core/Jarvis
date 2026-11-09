@@ -23,14 +23,16 @@ offline for core tasks, and speaks if you want it to.
 
 ### One-click (easiest) ⭐
 
-Just **double-click `run.bat`** — it finds (or creates) the venv,
-installs everything, and starts Jarvis in chat mode. No typing paths!
+**Double-click `run.bat` (or `Jarvis.bat`)** — ONE click launches
+**everything**: voice (wake word + speech) + movie-style web UI +
+local brain (if configured). It finds (or creates) the venv and
+installs everything. No typing paths!
 
 | Double-click | What it does |
 |---|---|
-| `run.bat` (or `Jarvis.bat`) | chat mode (movie-style terminal UI) |
+| `run.bat` / `Jarvis.bat` | **ALL-IN-ONE**: voice + web UI + brain |
 | `run-ui.bat` | movie-style web HUD → http://localhost:8765 |
-| `run-voice.bat` | voice mode (wake word + speech) |
+| `run-voice.bat` | voice mode only (wake word + speech) |
 | `run-selftest.bat` | runs the 22/22 test suite |
 
 ### Manual setup
@@ -42,7 +44,7 @@ installs everything, and starts Jarvis in chat mode. No typing paths!
    venv\Scripts\activate
    pip install -r requirements.txt
    ```
-3. **Run:** `python main.py` — or just double-click `run.bat`
+3. **Run everything:** `python main.py --all` — or just double-click `run.bat`
 3. **Install a local AI brain** (optional but recommended — offline AI chat).
    Two options, pick ONE:
 

@@ -197,6 +197,11 @@ double-click `run.bat` (it changes to the right folder itself).
 Python instead of the venv (common with `py main.py`). Use `python main.py`
 after activating, or just double-click `run.bat` — it finds the venv for you.
 
+**`PortAudioError: Error opening InputStream: Invalid device`** — no
+microphone detected (or none set as default input). Jarvis now checks at
+startup and tells you clearly. Fix: plug in a mic or enable the built-in
+one in Windows Settings → System → Sound → Input, then restart.
+
 **`Invalid argument` / weird quoted path errors** — don't paste full paths
 into the terminal. Run from the `Jarvis` folder, or double-click `run.bat`.
 
